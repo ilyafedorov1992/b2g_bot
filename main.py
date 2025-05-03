@@ -1,2 +1,5 @@
-# main logic of the bot
-print('Hello from bot')
+import time
+
+print("Hello from bot")
+while True:
+    time.sleep(10)
