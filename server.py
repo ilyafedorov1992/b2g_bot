@@ -22,17 +22,18 @@ async def run_bot():
 
     application = ApplicationBuilder().token(token).build()
     application.add_handler(CommandHandler("start", start))
-    await application.run_polling()
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling()
+    await application.updater.idle()
 
-# Запуск Flask и бота
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
 
-    # Flask в отдельном потоке
+    # Flask-сервер в отдельном потоке
     threading.Thread(target=lambda: app.run(host='0.0.0.0', port=port)).start()
 
-    # Telegram-бот в основном потоке
-    try:
-        asyncio.run(run_bot())
-    except (KeyboardInterrupt, SystemExit):
-        print("Бот остановлен")
+    # Telegram-бот в основном потоке, но без asyncio.run()
+    loop = asyncio.get_event_loop()
+    loop.create_task(run_bot())
+    loop.run_forever()
