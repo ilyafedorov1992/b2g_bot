@@ -4,8 +4,10 @@ import asyncio
 import threading
 from telegram.ext import ApplicationBuilder, CommandHandler
 
+# Инициализируем Flask
 app = Flask(__name__)
 
+# Корневая страница (для проверки Render'ом)
 @app.route('/')
 def home():
     return 'Hello from Render!'
@@ -22,18 +24,16 @@ async def run_bot():
 
     application = ApplicationBuilder().token(token).build()
     application.add_handler(CommandHandler("start", start))
-    await application.initialize()
-    await application.start()
-    await application.updater.start_polling()
-    await application.updater.idle()
+    await application.run_polling()
 
+# Запуск Flask и бота
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
 
-    # Flask-сервер в отдельном потоке
+    # Flask запускается в отдельном потоке
     threading.Thread(target=lambda: app.run(host='0.0.0.0', port=port)).start()
 
-    # Telegram-бот в основном потоке, но без asyncio.run()
+    # Telegram-бот запускается в основном потоке
     loop = asyncio.get_event_loop()
     loop.create_task(run_bot())
     loop.run_forever()
