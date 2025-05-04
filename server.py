@@ -60,6 +60,7 @@ async def main():
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
 
     await application.initialize()
+    await application.bot.delete_webhook(drop_pending_updates=True)
     await application.start()
     print("🤖 Бот запущен")
     await application.updater.start_polling()
