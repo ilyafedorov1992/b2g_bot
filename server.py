@@ -1,17 +1,14 @@
 from flask import Flask
 import os
-from telegram import Update, ReplyKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 import asyncio
-import threading
+from telegram import Update, ReplyKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
     return 'Hello from Render!'
-
-# --- Bot Handlers ---
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [["Сопротивление"], ["Возражения"], ["Продукты"]]
@@ -41,27 +38,24 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         await update.message.reply_text("Выбери продукт и возражение:", reply_markup=reply_markup)
-
     else:
         await update.message.reply_text("Пожалуйста, выбери вариант из меню 👇")
 
-# --- Bot Starter Function (safe threading) ---
+async def main():
+    token = os.environ.get("BOT_TOKEN")
+    if not token:
+        raise ValueError("BOT_TOKEN не найден в переменных окружения")
 
-def start_bot():
-    async def main():
-        token = os.environ.get("BOT_TOKEN")
-        if not token:
-            raise ValueError("BOT_TOKEN не найден в переменных окружения")
+    application = ApplicationBuilder().token(token).build()
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
 
-        application = ApplicationBuilder().token(token).build()
-        application.add_handler(CommandHandler("start", start))
-        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
-        await application.run_polling()
+    # Запуск Flask сервера в фоне
+    loop = asyncio.get_running_loop()
+    loop.create_task(asyncio.to_thread(app.run, host="0.0.0.0", port=int(os.environ.get("PORT", 5000))))
 
-    asyncio.run(main())
-
-# --- Main ---
+    # Запуск Telegram-бота
+    await application.run_polling()
 
 if __name__ == '__main__':
-    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))).start()
-    threading.Thread(target=start_bot).start()
+    asyncio.run(main())
